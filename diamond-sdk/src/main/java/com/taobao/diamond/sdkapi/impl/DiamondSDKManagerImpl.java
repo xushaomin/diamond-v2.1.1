@@ -38,8 +38,8 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.jackson.type.TypeReference;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.domain.BatchContextResult;
 import com.taobao.diamond.domain.ConfigInfo;

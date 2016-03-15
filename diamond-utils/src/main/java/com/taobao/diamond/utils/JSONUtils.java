@@ -1,8 +1,7 @@
 package com.taobao.diamond.utils;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JSONUtils {
 
@@ -16,7 +15,7 @@ public class JSONUtils {
         return mapper.readValue(s, clazz);
     }
     
-    public static Object deserializeObject(String s,TypeReference<?> typeReference) throws Exception {
+    public static Object deserializeObject(String s, TypeReference<?> typeReference) throws Exception {
         return mapper.readValue(s, typeReference);
     }
     

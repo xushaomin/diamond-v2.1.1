@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>diamond-all</artifactId>
 		<groupId>com.taobao.diamond</groupId>
-		<version>2.1.1.RELEASE</version>
+		<version>2.1.2.RELEASE</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -21,12 +21,12 @@
 			<artifactId>commons-io</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-core-lgpl</artifactId>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-mapper-lgpl</artifactId>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
