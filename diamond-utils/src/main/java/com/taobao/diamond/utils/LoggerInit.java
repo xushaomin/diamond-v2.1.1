@@ -13,8 +13,6 @@ import java.io.File;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
@@ -31,7 +29,7 @@ public class LoggerInit {
 	
     static public final String LOG_NAME_CONFIG_DATA = "DiamondConfigDataLog";
 
-    static public final Log log = LogFactory.getLog(LoggerInit.class);
+	private static Logger logger = Logger.getLogger(LoggerInit.class);
 
     static private volatile boolean initOK = false;
 
@@ -43,8 +41,7 @@ public class LoggerInit {
         defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.DatePattern", "'.'yyyy-MM-dd");
         defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.File", "diamond_config_data.log");
         defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.layout", "org.apache.log4j.PatternLayout");
-        defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.layout.ConversionPattern",
-            "%d{MM-dd HH:mm:ss} - %m%n");
+        defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.layout.ConversionPattern", "%d{MM-dd HH:mm:ss} - %m%n");
         defaultProperties.put("log4j.appender.DiamondConfigDataLogFile.Append", "true");
     }
 
@@ -68,7 +65,7 @@ public class LoggerInit {
              */
             FileAppender bizFileAppender = getFileAppender(Logger.getRootLogger());
             if (null == bizFileAppender) {
-                log.warn("上层业务层没有在ROOT LOGGER上设置FileAppender!!!");
+            	logger.warn("上层业务层没有在ROOT LOGGER上设置FileAppender!!!");
                 bizFileAppender = new FileAppender();
                 bizFileAppender.setFile(System.getProperty("user.home") + "/diamond/logs/diamond_config_data.log");
             }
@@ -91,7 +88,7 @@ public class LoggerInit {
 
         fileAppender.setFile(newLogFile.getAbsolutePath());
         fileAppender.activateOptions(); // 很重要，否则原有日志内容会被清空
-        log.warn("成功为" + logName + "添加Appender. 输出路径:" + newLogFile.getAbsolutePath());
+        logger.warn("成功为" + logName + "添加Appender. 输出路径:" + newLogFile.getAbsolutePath());
     }
 
 

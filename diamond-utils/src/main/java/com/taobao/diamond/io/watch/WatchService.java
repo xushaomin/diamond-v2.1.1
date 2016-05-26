@@ -16,8 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 
 import com.taobao.diamond.io.Path;
 
@@ -29,11 +28,12 @@ import com.taobao.diamond.io.Path;
  * @date 2010-5-4
  */
 public final class WatchService {
+	
     private BlockingQueue<WatchKey> changedKeys = new LinkedBlockingQueue<WatchKey>();
 
     private BlockingQueue<WatchKey> watchedKeys = new LinkedBlockingQueue<WatchKey>();
 
-    private static final Log log = LogFactory.getLog(WatchService.class);
+	private static Logger logger = Logger.getLogger(WatchService.class);
 
     private ScheduledExecutorService service;
 
@@ -66,7 +66,7 @@ public final class WatchService {
                     }
                 }
                 catch (Throwable t) {
-                    log.error("检测WatchKey异常,key=" + key, t);
+                	logger.error("检测WatchKey异常,key=" + key, t);
                 }
             }
         }
