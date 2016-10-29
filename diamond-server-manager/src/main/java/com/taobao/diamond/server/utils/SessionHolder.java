@@ -19,25 +19,21 @@ import javax.servlet.http.HttpSession;
  * @date 2010-5-26
  */
 public class SessionHolder {
+	
     private static ThreadLocal<HttpSession> sessionThreadLocal = new ThreadLocal<HttpSession>() {
-
         @Override
         protected HttpSession initialValue() {
             return null;
         }
-
     };
-
 
     public static void invalidate() {
         sessionThreadLocal.remove();
     }
 
-
     public static void setSession(HttpSession session) {
         sessionThreadLocal.set(session);
     }
-
 
     public static HttpSession getSession() {
         return sessionThreadLocal.get();

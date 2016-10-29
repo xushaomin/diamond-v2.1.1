@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
@@ -74,10 +75,8 @@ public class PersistService {
         if (srcValue == null) {
             throw new IllegalArgumentException("property is illegal:" + srcValue);
         }
-
         return srcValue;
     }
-
     private JdbcTemplate jt;
 
 
@@ -104,8 +103,7 @@ public class PersistService {
         ds.setMaxActive(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxActive"))));
         ds.setMaxIdle(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxIdle"))));
         ds.setMaxWait(Long.parseLong(ensurePropValueNotNull(props.getProperty("db.maxWait"))));
-        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props
-            .getProperty("db.poolPreparedStatements"))));
+        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props.getProperty("db.poolPreparedStatements"))));
 
         this.jt = new JdbcTemplate();
         this.jt.setDataSource(ds);
@@ -118,7 +116,6 @@ public class PersistService {
 
     public void addConfigInfo(final ConfigInfo configInfo) {
         final Timestamp time = TimeUtils.getCurrentTime();
-
         this.jt.update(
             "insert into config_info (data_id,group_id,content,md5,gmt_create,gmt_modified) values(?,?,?,?,?,?)",
             new PreparedStatementSetter() {
@@ -136,7 +133,6 @@ public class PersistService {
     
     public void addConfigUser(final long configId, final String userIds) {
         final Timestamp time = TimeUtils.getCurrentTime();
-
         this.jt.update(
             "insert into config_user (id,user_ids,gmt_create,gmt_modified) values(?,?,?,?)",
             new PreparedStatementSetter() {
@@ -173,7 +169,6 @@ public class PersistService {
 
     public void updateConfigInfo(final ConfigInfo configInfo) {
         final Timestamp time = TimeUtils.getCurrentTime();
-
         this.jt.update("update config_info set content=?,md5=?,gmt_modified=? where data_id=? and group_id=?",
             new PreparedStatementSetter() {
 
@@ -201,7 +196,6 @@ public class PersistService {
             });
     }
 
-
     public ConfigInfo findConfigInfo(final String dataId, final String group) {
         try {
             return this.jt.queryForObject(
@@ -213,7 +207,6 @@ public class PersistService {
             return null;
         }
     }
-
 
     public ConfigInfo findConfigInfo(long id) {
         try {
@@ -237,14 +230,12 @@ public class PersistService {
         }
     }
 
-
     public Page<ConfigInfo> findConfigInfoByDataId(final int pageNo, final int pageSize, final String dataId) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         return helper.fetchPage(this.jt, "select count(id) from config_info where data_id=?",
             "select id,data_id,group_id,content,md5 from config_info where data_id=?", new Object[] { dataId }, pageNo,
             pageSize, CONFIG_INFO_ROW_MAPPER);
     }
-
 
     public Page<ConfigInfo> findConfigInfoByGroup(final int pageNo, final int pageSize, final String group) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
@@ -253,14 +244,12 @@ public class PersistService {
             pageSize, CONFIG_INFO_ROW_MAPPER);
     }
 
-
     public Page<ConfigInfo> findAllConfigInfo(final int pageNo, final int pageSize) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         return helper.fetchPage(this.jt, "select count(id) from config_info order by id",
             "select id,data_id,group_id,content,md5 from config_info order by id ", new Object[] {}, pageNo, pageSize,
             CONFIG_INFO_ROW_MAPPER);
     }
-
 
     public Page<ConfigInfo> findConfigInfoLike(final int pageNo, final int pageSize, final String dataId,
             final String group) {
@@ -342,6 +331,16 @@ public class PersistService {
         else {
             return "%" + s + "%";
         }
+    }
+    
+    public List<ConfigInfo> findConfigInfoLike2(final String keyword) {
+        PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
+        String sqlFetchRows = "select id,data_id,group_id,content,md5 from config_info where 1=1 ";
+        if (!StringUtils.isBlank(keyword)) {
+        	sqlFetchRows += "and (content like '%" + keyword + "%') ";
+        }
+        sqlFetchRows += " order by id desc ";
+        return helper.fetchList(this.jt, sqlFetchRows, null, 100000, CONFIG_INFO_ROW_MAPPER);
     }
 
 }

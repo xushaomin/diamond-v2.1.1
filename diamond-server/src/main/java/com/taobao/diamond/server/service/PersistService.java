@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
@@ -246,6 +247,16 @@ public class PersistService {
         else {
             return "%" + s + "%";
         }
+    }
+    
+    public List<ConfigInfo> findConfigInfoLike2(final String keyword) {
+        PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
+        String sqlFetchRows = "select id,data_id,group_id,content,md5 from config_info where 1=1 ";
+        if (!StringUtils.isBlank(keyword)) {
+        	sqlFetchRows += "and (content like '%" + keyword + "%') ";
+        }
+        sqlFetchRows += " order by id desc ";
+        return helper.fetchList(this.jt, sqlFetchRows, null, 100000, CONFIG_INFO_ROW_MAPPER);
     }
 
 }

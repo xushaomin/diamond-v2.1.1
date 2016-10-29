@@ -11,6 +11,7 @@ package com.taobao.diamond.server.utils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.DataAccessException;
@@ -48,7 +49,7 @@ public class PaginationHelper<E> {
      * @param rowMapper
      * @return
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
 	public Page<E> fetchPage(final JdbcTemplate jt, final String sqlCountRows, final String sqlFetchRows,
             final Object args[], final int pageNo, final int pageSize, final ParameterizedRowMapper<E> rowMapper) {
         if (pageSize == 0) {
@@ -87,6 +88,42 @@ public class PaginationHelper<E> {
             }
         });
         return page;
+    }
+    
+    /**
+     * 取分页
+     * 
+     * @param jt
+     *            jdbcTemplate
+     * @param sqlFetchRows
+     *            查询数据的sql
+     * @param args
+     *            查询参数
+     * @param size
+     *            大小
+     * @param rowMapper
+     * @return
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public List<E> fetchList(final JdbcTemplate jt, final String sqlFetchRows,
+            final Object args[], final int size, final ParameterizedRowMapper<E> rowMapper) {
+        if (size == 0) {
+            return null;
+        }
+        final List<E> pageItems = new ArrayList<>();
+        // TODO 在数据量很大时， limit效率很低
+        final String selectSQL = sqlFetchRows + " limit " + size;
+        jt.query(selectSQL, args, new ResultSetExtractor() {
+            public Object extractData(ResultSet rs) throws SQLException, DataAccessException {
+                //List<E> pageItems = new ArrayList<>();
+                int currentRow = 0;
+                while (rs.next()) {
+                    pageItems.add(rowMapper.mapRow(rs, currentRow++));
+                }
+                return pageItems;
+            }
+        });
+        return pageItems;
     }
 
 }

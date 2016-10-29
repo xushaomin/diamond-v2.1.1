@@ -9,6 +9,7 @@
  */
 package com.taobao.diamond.server.service;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
@@ -243,6 +244,14 @@ public class ConfigService {
 
     private void notifyOtherNodes(String dataId, String group) {
         this.notifyService.notifyConfigInfoChange(dataId, group);
+        
+        //依赖的更新		
+		String keyword = "diamond.import=" + group + ":" + dataId;
+		
+		List<ConfigInfo> list = persistService.findConfigInfoLike2(keyword);
+		for (ConfigInfo configInfo2 : list) {
+			notifyOtherNodes(configInfo2.getDataId(), configInfo2.getGroup());
+		}
     }
 
 

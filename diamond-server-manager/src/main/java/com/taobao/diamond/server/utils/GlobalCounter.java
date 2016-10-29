@@ -16,31 +16,29 @@ package com.taobao.diamond.server.utils;
  * @date 2010-5-31
  */
 public class GlobalCounter {
-	
-    private static GlobalCounter instance = new GlobalCounter();
 
-    private long count = 0;
+	private static GlobalCounter instance = new GlobalCounter();
 
-    public static GlobalCounter getCounter() {
-        return instance;
-    }
+	private long count = 0;
 
-    public synchronized long decrementAndGet() {
-        if (count == Long.MIN_VALUE) {
-            count = 0;
-        }
-        else
-            count--;
-        return count;
-    }
+	public static GlobalCounter getCounter() {
+		return instance;
+	}
 
+	public synchronized long decrementAndGet() {
+		if (count == Long.MIN_VALUE) {
+			count = 0;
+		} else
+			count--;
+		return count;
+	}
 
-    public synchronized long get() {
-        return this.count;
-    }
+	public synchronized long get() {
+		return this.count;
+	}
 
-    public synchronized void set(long value) {
-        this.count = value;
-    }
+	public synchronized void set(long value) {
+		this.count = value;
+	}
 
 }
