@@ -27,32 +27,29 @@ import com.taobao.diamond.server.service.ConfigService;
 @RequestMapping("/notify.do")
 public class NotifyController {
 
-    @Autowired
-    private ConfigService configService;
+	@Autowired
+	private ConfigService configService;
 
+	public ConfigService getConfigService() {
+		return configService;
+	}
 
-    public ConfigService getConfigService() {
-        return configService;
-    }
+	public void setConfigService(ConfigService configService) {
+		this.configService = configService;
+	}
 
-
-    public void setConfigService(ConfigService configService) {
-        this.configService = configService;
-    }
-
-
-    /**
-     * 通知配置信息改变
-     * 
-     * @param id
-     * @return
-     */
-    @RequestMapping(method = RequestMethod.GET, params = "method=notifyConfigInfo")
-    public String notifyConfigInfo(@RequestParam("dataId") String dataId, @RequestParam("group") String group) {
-        dataId = dataId.trim();
-        group = group.trim();
-        this.configService.loadConfigInfoToDisk(dataId, group);
-        return "200";
-    }
+	/**
+	 * 通知配置信息改变
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.GET, params = "method=notifyConfigInfo")
+	public String notifyConfigInfo(@RequestParam("dataId") String dataId, @RequestParam("group") String group) {
+		dataId = dataId.trim();
+		group = group.trim();
+		this.configService.loadConfigInfoToDisk(dataId, group);
+		return "200";
+	}
 
 }

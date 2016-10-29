@@ -10,9 +10,9 @@
 package com.taobao.diamond.server.service;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jasig.cas.client.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,14 +22,13 @@ import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.domain.ConfigInfo;
 import com.taobao.diamond.domain.Page;
 import com.taobao.diamond.md5.MD5;
-import com.taobao.diamond.server.domain.ConfigUser;
 import com.taobao.diamond.server.exception.ConfigServiceException;
 
 
 @Service
 public class ConfigService {
 
-    private static Logger log = Logger.getLogger(ConfigService.class);
+    private static final Log log = LogFactory.getLog(ConfigService.class);
 
     @Autowired
     private PersistService persistService;
@@ -39,12 +38,12 @@ public class ConfigService {
 
     @Autowired
     private NotifyService notifyService;
+    
+    @Autowired
+    private ImportService importService;
 
-    /**
-     * content的MD5的缓存,key为group/dataId，value为md5值
-     */
-    private final ConcurrentHashMap<String, String> contentMD5Cache = new ConcurrentHashMap<String, String>();
-
+    @Autowired
+    private Md5CacheService md5CacheService;
 
     public String getConfigInfoPath(String dataId, String group) {
         StringBuilder sb = new StringBuilder("/");
@@ -53,34 +52,6 @@ public class ConfigService {
         sb.append(dataId);
         return sb.toString();
     }
-
-
-    public void updateMD5Cache(ConfigInfo configInfo) {
-        this.contentMD5Cache.put(generateMD5CacheKey(configInfo.getDataId(), configInfo.getGroup()), MD5.getInstance()
-            .getMD5String(configInfo.getContent()));
-    }
-
-
-    public String getContentMD5(String dataId, String group) {
-        String key = generateMD5CacheKey(dataId, group);
-        String md5 = this.contentMD5Cache.get(key);
-        if (md5 == null) {
-            synchronized (this) {
-                // 二重检查
-                return this.contentMD5Cache.get(key);
-            }
-        }
-        else {
-            return md5;
-        }
-    }
-
-
-    String generateMD5CacheKey(String dataId, String group) {
-        String key = group + "/" + dataId;
-        return key;
-    }
-
 
     String generatePath(String dataId, final String group) {
         StringBuilder sb = new StringBuilder("/");
@@ -94,22 +65,11 @@ public class ConfigService {
     public void removeConfigInfo(long id) {
         try {
             ConfigInfo configInfo = this.persistService.findConfigInfo(id);
-            this.diskService.removeConfigInfo(configInfo.getDataId(), configInfo.getGroup());
-            this.contentMD5Cache.remove(generateMD5CacheKey(configInfo.getDataId(), configInfo.getGroup()));
-            this.persistService.removeConfigInfo(configInfo);
+            diskService.removeConfigInfo(configInfo.getDataId(), configInfo.getGroup());            
+            md5CacheService.removeMD5Cache(configInfo);
+            persistService.removeConfigInfo(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(configInfo.getDataId(), configInfo.getGroup());
-
-        }
-        catch (Exception e) {
-            log.error("删除配置信息错误", e);
-            throw new ConfigServiceException(e);
-        }
-    }
-    
-    public void removeConfigUser(long id) {
-        try {
-            this.persistService.removeConfigUser(id);
         }
         catch (Exception e) {
             log.error("删除配置信息错误", e);
@@ -120,28 +80,19 @@ public class ConfigService {
 
     public void addConfigInfo(String dataId, String group, String content) {
         checkParameter(dataId, group, content);
-        ConfigInfo configInfo = new ConfigInfo(dataId, group, content);
+        String importContent = importService.getConentWithImport(content);
+        ConfigInfo configInfo = new ConfigInfo(dataId, group, importContent);
         // 保存顺序：先数据库，再磁盘
         try {
-            persistService.addConfigInfo(configInfo);
+            persistService.addConfigInfo(configInfo, content);
             // 切记更新缓存
-            this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
+            md5CacheService.updateMD5Cache(configInfo);
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
         }
         catch (Exception e) {
             log.error("保存ConfigInfo失败", e);
-            throw new ConfigServiceException(e);
-        }
-    }
-    
-    public void addConfigUser(Long configId, String userIds) {
-        try {
-            persistService.addConfigUser(configId, userIds);
-        }
-        catch (Exception e) {
-            log.error("保存ConfigUser失败", e);
             throw new ConfigServiceException(e);
         }
     }
@@ -156,33 +107,16 @@ public class ConfigService {
      */
     public void updateConfigInfo(String dataId, String group, String content) {
         checkParameter(dataId, group, content);
-        ConfigInfo configInfo = new ConfigInfo(dataId, group, content);
+        String importContent = importService.getConentWithImport(content);
+        ConfigInfo configInfo = new ConfigInfo(dataId, group, importContent);
         // 先更新数据库，再更新磁盘
         try {
-            persistService.updateConfigInfo(configInfo);
+            persistService.updateConfigInfo(configInfo, content);
             // 切记更新缓存
-            this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
+            md5CacheService.updateMD5Cache(configInfo);
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
-        }
-        catch (Exception e) {
-            log.error("保存ConfigInfo失败", e);
-            throw new ConfigServiceException(e);
-        }
-    }
-    
-    /**
-     * 更新配置信息
-     * 
-     * @param dataId
-     * @param group
-     * @param content
-     */
-    public void updateConfigUser(long configId, String userIds) {
-        ConfigUser configUser = new ConfigUser(configId, userIds);
-        try {
-            persistService.updateConfigUser(configUser);
         }
         catch (Exception e) {
             log.error("保存ConfigInfo失败", e);
@@ -200,13 +134,21 @@ public class ConfigService {
         try {
             ConfigInfo configInfo = this.persistService.findConfigInfo(dataId, group);
             if (configInfo != null) {
-                this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
-                this.diskService.saveToDisk(configInfo);
+            	
+            	String content = configInfo.getContent();
+            	content = importService.getConentWithImport(content);
+            	configInfo.setContent(content);
+            	
+            	String md5 = MD5.getInstance().getMD5String(content);
+            	configInfo.setMd5(md5);
+            	
+            	md5CacheService.updateMD5Cache(configInfo);
+                diskService.saveToDisk(configInfo);
             }
             else {
                 // 删除文件
-                this.contentMD5Cache.remove(generateMD5CacheKey(dataId, group));
-                this.diskService.removeConfigInfo(dataId, group);
+                md5CacheService.removeMD5Cache(dataId, group);
+                diskService.removeConfigInfo(dataId, group);
             }
         }
         catch (Exception e) {
@@ -218,10 +160,6 @@ public class ConfigService {
 
     public ConfigInfo findConfigInfo(String dataId, String group) {
         return persistService.findConfigInfo(dataId, group);
-    }
-    
-    public ConfigUser findConfigUser(Long configId) {
-        return persistService.findConfigUser(configId);
     }
 
 
@@ -257,20 +195,6 @@ public class ConfigService {
         }
     }
 
-
-    /**
-     * 分页模糊查找配置信息
-     * 
-     * @param pageNo
-     * @param pageSize
-     * @param group
-     * @param dataId
-     * @return
-     */
-    public Page<ConfigInfo> findConfigInfoLike(final int pageNo, final int pageSize, final String group, final String dataId) {
-        return this.persistService.findConfigInfoLike(pageNo, pageSize, dataId, group);
-    }
-    
     /**
      * 分页模糊查找配置信息
      * 
@@ -283,6 +207,21 @@ public class ConfigService {
     public Page<ConfigInfo> findConfigInfoLike2(final int pageNo, final int pageSize, final String keyword, User user) {
         return this.persistService.findConfigInfoLike2(pageNo, pageSize, keyword, user);
     }
+
+    /**
+     * 分页模糊查找配置信息
+     * 
+     * @param pageNo
+     * @param pageSize
+     * @param group
+     * @param dataId
+     * @return
+     */
+    public Page<ConfigInfo> findConfigInfoLike(final int pageNo, final int pageSize, final String group,
+            final String dataId) {
+        return this.persistService.findConfigInfoLike(pageNo, pageSize, dataId, group);
+    }
+
 
     private void checkParameter(String dataId, String group, String content) {
         if (!StringUtils.hasLength(dataId) || StringUtils.containsWhitespace(dataId))
@@ -299,10 +238,10 @@ public class ConfigService {
     private void notifyOtherNodes(String dataId, String group) {
         this.notifyService.notifyConfigInfoChange(dataId, group);
         
-		// 依赖的更新
+        //依赖的更新		
 		String keyword = "diamond.import=" + group + ":" + dataId;
-
-		List<ConfigInfo> list = persistService.findConfigInfoLike2(keyword);
+		
+		List<ConfigInfo> list = persistService.findConfigInfoByKeyword(keyword);
 		for (ConfigInfo configInfo2 : list) {
 			notifyOtherNodes(configInfo2.getDataId(), configInfo2.getGroup());
 		}
@@ -336,6 +275,27 @@ public class ConfigService {
 
     public void setNotifyService(NotifyService notifyService) {
         this.notifyService = notifyService;
+    }
+    
+    
+    public void removeConfigUser(long id) {
+        try {
+            this.persistService.removeConfigUser(id);
+        }
+        catch (Exception e) {
+            log.error("删除配置信息错误", e);
+            throw new ConfigServiceException(e);
+        }
+    }
+    
+    public void addConfigUser(Long configId, String userIds) {
+        try {
+            persistService.addConfigUser(configId, userIds);
+        }
+        catch (Exception e) {
+            log.error("保存ConfigUser失败", e);
+            throw new ConfigServiceException(e);
+        }
     }
 
 }

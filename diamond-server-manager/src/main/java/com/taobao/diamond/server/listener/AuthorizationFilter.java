@@ -23,7 +23,6 @@ import javax.servlet.http.HttpSession;
 
 import com.taobao.diamond.server.utils.SessionHolder;
 
-
 /**
  * 授权验证
  * 
@@ -32,31 +31,28 @@ import com.taobao.diamond.server.utils.SessionHolder;
  */
 public class AuthorizationFilter implements Filter {
 
-    public void destroy() {
+	public void destroy() {
 
-    }
+	}
 
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+		HttpServletRequest httpRequest = (HttpServletRequest) request;
+		HttpSession session = httpRequest.getSession();
+		SessionHolder.setSession(session);
+		try {
+			// 判断是否登录，没有就跳转到登录页面
+			if (session.getAttribute("user") == null)
+				((HttpServletResponse) response).sendRedirect(httpRequest.getContextPath() + "/jsp/login.jsp");
+			else
+				chain.doFilter(httpRequest, response);
+		} finally {
+			SessionHolder.invalidate();
+		}
+	}
 
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
-            ServletException {
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpSession session = httpRequest.getSession();
-        SessionHolder.setSession(session);
-        try {
-            // 判断是否登录，没有就跳转到登录页面
-            if (session.getAttribute("user") == null)
-                ((HttpServletResponse) response).sendRedirect(httpRequest.getContextPath() + "/jsp/login.jsp");
-            else
-                chain.doFilter(httpRequest, response);
-        }
-        finally {
-            SessionHolder.invalidate();
-        }
-    }
+	public void init(FilterConfig filterConfig) throws ServletException {
 
-
-    public void init(FilterConfig filterConfig) throws ServletException {
-
-    }
+	}
 
 }

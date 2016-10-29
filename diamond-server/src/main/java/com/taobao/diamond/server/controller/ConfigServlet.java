@@ -15,6 +15,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.server.service.ConfigService;
 import com.taobao.diamond.server.service.DiskService;
+import com.taobao.diamond.server.service.Md5CacheService;
 
 
 public class ConfigServlet extends HttpServlet {
@@ -26,20 +27,22 @@ public class ConfigServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-
         super.init();
-        WebApplicationContext webApplicationContext =
-                WebApplicationContextUtils.getWebApplicationContext(getServletContext());
+        WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
         configService = (ConfigService) webApplicationContext.getBean("configService");
-        this.diskService = (DiskService) webApplicationContext.getBean("diskService");
+        diskService = (DiskService) webApplicationContext.getBean("diskService");
+        md5CacheService = (Md5CacheService) webApplicationContext.getBean("md5CacheService");
         configController = new ConfigController();
-        this.configController.setConfigService(configService);
-        this.configController.setDiskService(diskService);
+        configController.setConfigService(configService);
+        configController.setDiskService(diskService);
+        configController.setMd5CacheService(md5CacheService);
     }
 
     private ConfigService configService;
 
     private DiskService diskService;
+    
+    private Md5CacheService md5CacheService;
 
 
     /**

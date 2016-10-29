@@ -46,7 +46,7 @@ public class PersistService {
     private static final int QUERY_TIMEOUT = 2;
 
     private static final ConfigInfoRowMapper CONFIG_INFO_ROW_MAPPER = new ConfigInfoRowMapper();
-    
+
     private static final ConfigUserRowMapper CONFIG_USER_ROW_MAPPER = new ConfigUserRowMapper();
 
     private static final class ConfigInfoRowMapper implements ParameterizedRowMapper<ConfigInfo> {
@@ -75,8 +75,10 @@ public class PersistService {
         if (srcValue == null) {
             throw new IllegalArgumentException("property is illegal:" + srcValue);
         }
+
         return srcValue;
     }
+
     private JdbcTemplate jt;
 
 
@@ -103,7 +105,8 @@ public class PersistService {
         ds.setMaxActive(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxActive"))));
         ds.setMaxIdle(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxIdle"))));
         ds.setMaxWait(Long.parseLong(ensurePropValueNotNull(props.getProperty("db.maxWait"))));
-        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props.getProperty("db.poolPreparedStatements"))));
+        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props
+            .getProperty("db.poolPreparedStatements"))));
 
         this.jt = new JdbcTemplate();
         this.jt.setDataSource(ds);
@@ -114,7 +117,7 @@ public class PersistService {
     }
 
 
-    public void addConfigInfo(final ConfigInfo configInfo) {
+    public void addConfigInfo(final ConfigInfo configInfo, final String content) {
         final Timestamp time = TimeUtils.getCurrentTime();
         this.jt.update(
             "insert into config_info (data_id,group_id,content,md5,gmt_create,gmt_modified) values(?,?,?,?,?,?)",
@@ -123,23 +126,8 @@ public class PersistService {
                     int index = 1;
                     ps.setString(index++, configInfo.getDataId());
                     ps.setString(index++, configInfo.getGroup());
-                    ps.setString(index++, configInfo.getContent());
+                    ps.setString(index++, content);
                     ps.setString(index++, configInfo.getMd5());
-                    ps.setTimestamp(index++, time);
-                    ps.setTimestamp(index++, time);
-                }
-            });
-    }
-    
-    public void addConfigUser(final long configId, final String userIds) {
-        final Timestamp time = TimeUtils.getCurrentTime();
-        this.jt.update(
-            "insert into config_user (id,user_ids,gmt_create,gmt_modified) values(?,?,?,?)",
-            new PreparedStatementSetter() {
-                public void setValues(PreparedStatement ps) throws SQLException {
-                    int index = 1;
-                    ps.setLong(index++, configId);
-                    ps.setString(index++, userIds);
                     ps.setTimestamp(index++, time);
                     ps.setTimestamp(index++, time);
                 }
@@ -156,25 +144,14 @@ public class PersistService {
             }
         });
     }
-    
-    public void removeConfigUser(final long configId) {
-        this.jt.update("delete from config_user where id=? ", new PreparedStatementSetter() {
-            public void setValues(PreparedStatement ps) throws SQLException {
-                int index = 1;
-                ps.setLong(index++, configId);
-            }
-        });
-    }
 
-
-    public void updateConfigInfo(final ConfigInfo configInfo) {
+    public void updateConfigInfo(final ConfigInfo configInfo, final String content) {
         final Timestamp time = TimeUtils.getCurrentTime();
         this.jt.update("update config_info set content=?,md5=?,gmt_modified=? where data_id=? and group_id=?",
             new PreparedStatementSetter() {
-
                 public void setValues(PreparedStatement ps) throws SQLException {
                     int index = 1;
-                    ps.setString(index++, configInfo.getContent());
+                    ps.setString(index++, content);
                     ps.setString(index++, configInfo.getMd5());
                     ps.setTimestamp(index++, time);
                     ps.setString(index++, configInfo.getDataId());
@@ -182,19 +159,7 @@ public class PersistService {
                 }
             });
     }
-    
-    public void updateConfigUser(final ConfigUser configUser) {
-        final Timestamp time = TimeUtils.getCurrentTime();
-        this.jt.update("update config_user set user_ids=?,gmt_modified=? where id=?",
-            new PreparedStatementSetter() {
-                public void setValues(PreparedStatement ps) throws SQLException {
-                    int index = 1;
-                    ps.setString(index++, configUser.getUserIds());
-                    ps.setTimestamp(index++, time);
-                    ps.setLong(index++, configUser.getId());
-                }
-            });
-    }
+
 
     public ConfigInfo findConfigInfo(final String dataId, final String group) {
         try {
@@ -208,6 +173,7 @@ public class PersistService {
         }
     }
 
+
     public ConfigInfo findConfigInfo(long id) {
         try {
             return this.jt.queryForObject("select id,data_id,group_id,content,md5 from config_info where id=?",
@@ -217,18 +183,7 @@ public class PersistService {
             return null;
         }
     }
-    
-    public ConfigUser findConfigUser(final Long configId) {
-        try {
-            return this.jt.queryForObject(
-                "select id, user_ids from config_user where id=? ",
-                new Object[] { configId }, CONFIG_USER_ROW_MAPPER);
-        }
-        catch (EmptyResultDataAccessException e) {
-            // 是EmptyResultDataAccessException, 表明数据不存在, 返回null
-            return null;
-        }
-    }
+
 
     public Page<ConfigInfo> findConfigInfoByDataId(final int pageNo, final int pageSize, final String dataId) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
@@ -237,6 +192,7 @@ public class PersistService {
             pageSize, CONFIG_INFO_ROW_MAPPER);
     }
 
+
     public Page<ConfigInfo> findConfigInfoByGroup(final int pageNo, final int pageSize, final String group) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         return helper.fetchPage(this.jt, "select count(id) from config_info where group_id=?",
@@ -244,12 +200,14 @@ public class PersistService {
             pageSize, CONFIG_INFO_ROW_MAPPER);
     }
 
+
     public Page<ConfigInfo> findAllConfigInfo(final int pageNo, final int pageSize) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         return helper.fetchPage(this.jt, "select count(id) from config_info order by id",
             "select id,data_id,group_id,content,md5 from config_info order by id ", new Object[] {}, pageNo, pageSize,
             CONFIG_INFO_ROW_MAPPER);
     }
+
 
     public Page<ConfigInfo> findConfigInfoLike(final int pageNo, final int pageSize, final String dataId,
             final String group) {
@@ -291,7 +249,7 @@ public class PersistService {
 
         return helper.fetchPage(this.jt, sqlCountRows, sqlFetchRows, args, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
     }
-
+    
     public Page<ConfigInfo> findConfigInfoLike2(final int pageNo, final int pageSize, final String keyword, User user) {
 
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
@@ -325,6 +283,7 @@ public class PersistService {
         return helper.fetchPage(this.jt, sqlCountRows, sqlFetchRows, args, pageNo, pageSize, CONFIG_INFO_ROW_MAPPER);
     }
 
+
     private String generateLikeArgument(String s) {
         if (s.indexOf("*") >= 0)
             return s.replaceAll("\\*", "%");
@@ -333,7 +292,7 @@ public class PersistService {
         }
     }
     
-    public List<ConfigInfo> findConfigInfoLike2(final String keyword) {
+    public List<ConfigInfo> findConfigInfoByKeyword(final String keyword) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         String sqlFetchRows = "select id,data_id,group_id,content,md5 from config_info where 1=1 ";
         if (!StringUtils.isBlank(keyword)) {
@@ -341,6 +300,44 @@ public class PersistService {
         }
         sqlFetchRows += " order by id desc ";
         return helper.fetchList(this.jt, sqlFetchRows, null, 100000, CONFIG_INFO_ROW_MAPPER);
+    }
+    
+    //user
+    public void removeConfigUser(final long configId) {
+        this.jt.update("delete from config_user where id=? ", new PreparedStatementSetter() {
+            public void setValues(PreparedStatement ps) throws SQLException {
+                int index = 1;
+                ps.setLong(index++, configId);
+            }
+        });
+    }
+    
+    public ConfigUser findConfigUser(final Long configId) {
+        try {
+            return this.jt.queryForObject(
+                "select id, user_ids from config_user where id=? ",
+                new Object[] { configId }, CONFIG_USER_ROW_MAPPER);
+        }
+        catch (EmptyResultDataAccessException e) {
+            // 是EmptyResultDataAccessException, 表明数据不存在, 返回null
+            return null;
+        }
+    }
+    
+    public void addConfigUser(final long configId, final String userIds) {
+        final Timestamp time = TimeUtils.getCurrentTime();
+
+        this.jt.update(
+            "insert into config_user (id,user_ids,gmt_create,gmt_modified) values(?,?,?,?)",
+            new PreparedStatementSetter() {
+                public void setValues(PreparedStatement ps) throws SQLException {
+                    int index = 1;
+                    ps.setLong(index++, configId);
+                    ps.setString(index++, userIds);
+                    ps.setTimestamp(index++, time);
+                    ps.setTimestamp(index++, time);
+                }
+            });
     }
 
 }

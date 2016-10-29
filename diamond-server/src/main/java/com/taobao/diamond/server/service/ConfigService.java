@@ -10,7 +10,6 @@
 package com.taobao.diamond.server.service;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,12 +37,12 @@ public class ConfigService {
 
     @Autowired
     private NotifyService notifyService;
+    
+    @Autowired
+    private ImportService importService;
 
-    /**
-     * content的MD5的缓存,key为group/dataId，value为md5值
-     */
-    private final ConcurrentHashMap<String, String> contentMD5Cache = new ConcurrentHashMap<String, String>();
-
+    @Autowired
+    private Md5CacheService md5CacheService;
 
     public String getConfigInfoPath(String dataId, String group) {
         StringBuilder sb = new StringBuilder("/");
@@ -52,34 +51,6 @@ public class ConfigService {
         sb.append(dataId);
         return sb.toString();
     }
-
-
-    public void updateMD5Cache(ConfigInfo configInfo) {
-        this.contentMD5Cache.put(generateMD5CacheKey(configInfo.getDataId(), configInfo.getGroup()), MD5.getInstance()
-            .getMD5String(configInfo.getContent()));
-    }
-
-
-    public String getContentMD5(String dataId, String group) {
-        String key = generateMD5CacheKey(dataId, group);
-        String md5 = this.contentMD5Cache.get(key);
-        if (md5 == null) {
-            synchronized (this) {
-                // 二重检查
-                return this.contentMD5Cache.get(key);
-            }
-        }
-        else {
-            return md5;
-        }
-    }
-
-
-    String generateMD5CacheKey(String dataId, String group) {
-        String key = group + "/" + dataId;
-        return key;
-    }
-
 
     String generatePath(String dataId, final String group) {
         StringBuilder sb = new StringBuilder("/");
@@ -93,12 +64,11 @@ public class ConfigService {
     public void removeConfigInfo(long id) {
         try {
             ConfigInfo configInfo = this.persistService.findConfigInfo(id);
-            this.diskService.removeConfigInfo(configInfo.getDataId(), configInfo.getGroup());
-            this.contentMD5Cache.remove(generateMD5CacheKey(configInfo.getDataId(), configInfo.getGroup()));
-            this.persistService.removeConfigInfo(configInfo);
+            diskService.removeConfigInfo(configInfo.getDataId(), configInfo.getGroup());            
+            md5CacheService.removeMD5Cache(configInfo);
+            persistService.removeConfigInfo(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(configInfo.getDataId(), configInfo.getGroup());
-
         }
         catch (Exception e) {
             log.error("删除配置信息错误", e);
@@ -109,12 +79,13 @@ public class ConfigService {
 
     public void addConfigInfo(String dataId, String group, String content) {
         checkParameter(dataId, group, content);
-        ConfigInfo configInfo = new ConfigInfo(dataId, group, content);
+        String importContent = importService.getConentWithImport(content);
+        ConfigInfo configInfo = new ConfigInfo(dataId, group, importContent);
         // 保存顺序：先数据库，再磁盘
         try {
-            persistService.addConfigInfo(configInfo);
+            persistService.addConfigInfo(configInfo, content);
             // 切记更新缓存
-            this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
+            md5CacheService.updateMD5Cache(configInfo);
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
@@ -135,12 +106,13 @@ public class ConfigService {
      */
     public void updateConfigInfo(String dataId, String group, String content) {
         checkParameter(dataId, group, content);
-        ConfigInfo configInfo = new ConfigInfo(dataId, group, content);
+        String importContent = importService.getConentWithImport(content);
+        ConfigInfo configInfo = new ConfigInfo(dataId, group, importContent);
         // 先更新数据库，再更新磁盘
         try {
-            persistService.updateConfigInfo(configInfo);
+            persistService.updateConfigInfo(configInfo, content);
             // 切记更新缓存
-            this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
+            md5CacheService.updateMD5Cache(configInfo);
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
@@ -161,13 +133,21 @@ public class ConfigService {
         try {
             ConfigInfo configInfo = this.persistService.findConfigInfo(dataId, group);
             if (configInfo != null) {
-                this.contentMD5Cache.put(generateMD5CacheKey(dataId, group), configInfo.getMd5());
-                this.diskService.saveToDisk(configInfo);
+            	
+            	String content = configInfo.getContent();
+            	content = importService.getConentWithImport(content);
+            	configInfo.setContent(content);
+            	
+            	String md5 = MD5.getInstance().getMD5String(content);
+            	configInfo.setMd5(md5);
+            	
+            	md5CacheService.updateMD5Cache(configInfo);
+                diskService.saveToDisk(configInfo);
             }
             else {
                 // 删除文件
-                this.contentMD5Cache.remove(generateMD5CacheKey(dataId, group));
-                this.diskService.removeConfigInfo(dataId, group);
+                md5CacheService.removeMD5Cache(dataId, group);
+                diskService.removeConfigInfo(dataId, group);
             }
         }
         catch (Exception e) {
@@ -248,7 +228,7 @@ public class ConfigService {
         //依赖的更新		
 		String keyword = "diamond.import=" + group + ":" + dataId;
 		
-		List<ConfigInfo> list = persistService.findConfigInfoLike2(keyword);
+		List<ConfigInfo> list = persistService.findConfigInfoByKeyword(keyword);
 		for (ConfigInfo configInfo2 : list) {
 			notifyOtherNodes(configInfo2.getDataId(), configInfo2.getGroup());
 		}

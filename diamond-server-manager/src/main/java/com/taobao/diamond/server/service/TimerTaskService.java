@@ -32,19 +32,23 @@ public class TimerTaskService {
 	@Autowired
 	private ConfigService configService;
 
+	@Autowired
+	private Md5CacheService md5CacheService;
+	
+	@Autowired
+	private ImportService importService;
+
 	private ScheduledExecutorService scheduledExecutorService;
 
 	@PostConstruct
 	public void init() {
 		this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
 				t.setName(THREAD_NAME);
 				t.setDaemon(true);
 				return t;
 			}
-
 		});
 
 		DumpConfigInfoTask dumpTask = new DumpConfigInfoTask(this);
@@ -82,6 +86,22 @@ public class TimerTaskService {
 
 	public DiskService getDiskService() {
 		return diskService;
+	}
+
+	public Md5CacheService getMd5CacheService() {
+		return md5CacheService;
+	}
+
+	public void setMd5CacheService(Md5CacheService md5CacheService) {
+		this.md5CacheService = md5CacheService;
+	}
+
+	public ImportService getImportService() {
+		return importService;
+	}
+
+	public void setImportService(ImportService importService) {
+		this.importService = importService;
 	}
 
 }

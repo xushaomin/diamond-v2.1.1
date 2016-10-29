@@ -1,10 +1,8 @@
 package com.taobao.diamond.server.service;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.ServletContext;
@@ -40,14 +38,10 @@ public class DiskService {
 
     @Autowired
     private ServletContext servletContext;
-
-    @Autowired
-    private PersistService persistService;
-
+    
     public void setServletContext(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
-
 
     public ServletContext getServletContext() {
         return this.servletContext;
@@ -76,36 +70,12 @@ public class DiskService {
         return getFilePath(Constants.BASE_DIR + "/" + group + "/" + dataId);
     }
 
-
     public void saveToDisk(ConfigInfo configInfo) {
         String group = configInfo.getGroup();
         String dataId = configInfo.getDataId();
         String content = configInfo.getContent();
         String cacheKey = generateCacheKey(group, dataId);
-        
-        if(content.contains("diamond.import=")) {
-			try {
-				StringReader reader = new StringReader(content);
-				BufferedReader br = new BufferedReader(reader);
-				String line = "";
-
-				while ((line = br.readLine()) != null) {
-					if (line.contains("diamond.import")) {
-						String[] arrs = line.split("=");
-						String[] keys = arrs[1].split(":");
-						String groupKey = keys[0];
-						String dataIdKey = keys[1];
-						ConfigInfo importConfig = persistService.findConfigInfo(dataIdKey, groupKey);
-						if (null != importConfig) {
-							content = content + "\n" + importConfig.getContent();
-						}
-					}
-				}
-				br.close();
-			} catch (Exception e) {
-				// TODO: handle exception
-			}
-        }
+                
         // 标记正在写磁盘
         if (this.modifyMarkCache.putIfAbsent(cacheKey, true) == null) {
             File tempFile = null;
@@ -141,8 +111,7 @@ public class DiskService {
         }
 
     }
-
-
+    
     public boolean isModified(String dataId, String group) {
         return this.modifyMarkCache.get(generateCacheKey(group, dataId)) != null;
     }

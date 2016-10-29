@@ -2,9 +2,10 @@ package com.taobao.diamond.server.domain;
 
 import java.io.Serializable;
 
-@SuppressWarnings("serial")
 public class ConfigUser implements Serializable {
 
+	private static final long serialVersionUID = 1L;
+	
 	private long id;
 	private String userIds;
 

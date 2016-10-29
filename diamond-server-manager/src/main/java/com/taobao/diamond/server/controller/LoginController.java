@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.taobao.diamond.server.service.AdminService;
 
-
 /**
  * 登录登出控制器
  * 
@@ -30,37 +29,32 @@ import com.taobao.diamond.server.service.AdminService;
 @Controller
 @RequestMapping("/login.do")
 public class LoginController {
-    @Autowired
-    private AdminService adminService;
+	@Autowired
+	private AdminService adminService;
 
+	@RequestMapping(params = "method=login", method = RequestMethod.POST)
+	public String login(HttpServletRequest request, @RequestParam("username") String username,
+			@RequestParam("password") String password, ModelMap modelMap) {
+		if (adminService.login(username, password)) {
+			request.getSession().setAttribute("user", username);
+			return "admin/admin";
+		} else {
+			modelMap.addAttribute("message", "登录失败，用户名密码不匹配");
+			return "login";
+		}
+	}
 
-    @RequestMapping(params = "method=login", method = RequestMethod.POST)
-    public String login(HttpServletRequest request, @RequestParam("username") String username,
-            @RequestParam("password") String password, ModelMap modelMap) {
-        if (adminService.login(username, password)) {
-            request.getSession().setAttribute("user", username);
-            return "admin/admin";
-        }
-        else {
-            modelMap.addAttribute("message", "登录失败，用户名密码不匹配");
-            return "login";
-        }
-    }
+	public AdminService getAdminService() {
+		return adminService;
+	}
 
+	public void setAdminService(AdminService adminService) {
+		this.adminService = adminService;
+	}
 
-    public AdminService getAdminService() {
-        return adminService;
-    }
-
-
-    public void setAdminService(AdminService adminService) {
-        this.adminService = adminService;
-    }
-
-
-    @RequestMapping(params = "method=logout", method = RequestMethod.GET)
-    public String logout(HttpServletRequest request) {
-        request.getSession().invalidate();
-        return "login";
-    }
+	@RequestMapping(params = "method=logout", method = RequestMethod.GET)
+	public String logout(HttpServletRequest request) {
+		request.getSession().invalidate();
+		return "login";
+	}
 }

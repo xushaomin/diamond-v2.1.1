@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.taobao.diamond.domain.ConfigInfo;
 import com.taobao.diamond.domain.Page;
+import com.taobao.diamond.md5.MD5;
 
 
 /**
@@ -23,11 +24,9 @@ public final class DumpConfigInfoTask implements Runnable {
 
     private final TimerTaskService timerTaskService;
 
-
     public DumpConfigInfoTask(TimerTaskService timerTaskService) {
         this.timerTaskService = timerTaskService;
     }
-
 
     public void run() {
         try {
@@ -58,15 +57,21 @@ public final class DumpConfigInfoTask implements Runnable {
                 continue;
             }
             try {
+            	String content = configInfo.getContent();
+            	content = timerTaskService.getImportService().getConentWithImport(content);
+            	configInfo.setContent(content);
+            	
+            	String md5 = MD5.getInstance().getMD5String(content);
+            	configInfo.setMd5(md5);
+            	
                 // 写入磁盘，更新缓存
-                this.timerTaskService.getConfigService().updateMD5Cache(configInfo);
-                this.timerTaskService.getDiskService().saveToDisk(configInfo);
+                timerTaskService.getMd5CacheService().updateMD5Cache(configInfo);
+                timerTaskService.getDiskService().saveToDisk(configInfo);
             }
             catch (Throwable t) {
                 log.error(
                     "dump config info error, dataId=" + configInfo.getDataId() + ", group=" + configInfo.getGroup(), t);
             }
-
         }
     }
 

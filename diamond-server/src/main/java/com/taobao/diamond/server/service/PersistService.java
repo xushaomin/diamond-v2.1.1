@@ -103,9 +103,8 @@ public class PersistService {
     }
 
 
-    public void addConfigInfo(final ConfigInfo configInfo) {
+    public void addConfigInfo(final ConfigInfo configInfo, final String content) {
         final Timestamp time = TimeUtils.getCurrentTime();
-
         this.jt.update(
             "insert into config_info (data_id,group_id,content,md5,gmt_create,gmt_modified) values(?,?,?,?,?,?)",
             new PreparedStatementSetter() {
@@ -113,7 +112,7 @@ public class PersistService {
                     int index = 1;
                     ps.setString(index++, configInfo.getDataId());
                     ps.setString(index++, configInfo.getGroup());
-                    ps.setString(index++, configInfo.getContent());
+                    ps.setString(index++, content);
                     ps.setString(index++, configInfo.getMd5());
                     ps.setTimestamp(index++, time);
                     ps.setTimestamp(index++, time);
@@ -132,16 +131,13 @@ public class PersistService {
         });
     }
 
-
-    public void updateConfigInfo(final ConfigInfo configInfo) {
+    public void updateConfigInfo(final ConfigInfo configInfo, final String content) {
         final Timestamp time = TimeUtils.getCurrentTime();
-
         this.jt.update("update config_info set content=?,md5=?,gmt_modified=? where data_id=? and group_id=?",
             new PreparedStatementSetter() {
-
                 public void setValues(PreparedStatement ps) throws SQLException {
                     int index = 1;
-                    ps.setString(index++, configInfo.getContent());
+                    ps.setString(index++, content);
                     ps.setString(index++, configInfo.getMd5());
                     ps.setTimestamp(index++, time);
                     ps.setString(index++, configInfo.getDataId());
@@ -249,7 +245,7 @@ public class PersistService {
         }
     }
     
-    public List<ConfigInfo> findConfigInfoLike2(final String keyword) {
+    public List<ConfigInfo> findConfigInfoByKeyword(final String keyword) {
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
         String sqlFetchRows = "select id,data_id,group_id,content,md5 from config_info where 1=1 ";
         if (!StringUtils.isBlank(keyword)) {

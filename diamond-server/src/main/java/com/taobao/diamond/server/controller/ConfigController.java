@@ -26,6 +26,7 @@ import org.springframework.stereotype.Controller;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.server.service.ConfigService;
 import com.taobao.diamond.server.service.DiskService;
+import com.taobao.diamond.server.service.Md5CacheService;
 import com.taobao.diamond.server.utils.GlobalCounter;
 
 /**
@@ -39,6 +40,9 @@ public class ConfigController {
 
 	@Autowired
 	private ConfigService configService;
+	
+	@Autowired
+	private Md5CacheService md5CacheService;
 
 	@Autowired
 	private DiskService diskService;
@@ -57,7 +61,7 @@ public class ConfigController {
 			return "503";
 		}
 
-		String md5 = this.configService.getContentMD5(dataId, group);
+		String md5 = md5CacheService.getContentMD5(dataId, group);
 		if (md5 == null) {
 			return "404";
 		}
@@ -100,7 +104,7 @@ public class ConfigController {
 
 		StringBuilder resultBuilder = new StringBuilder();
 		for (ConfigKey key : configKeyList) {
-			String md5 = this.configService.getContentMD5(key.getDataId(), key.getGroup());
+			String md5 = md5CacheService.getContentMD5(key.getDataId(), key.getGroup());
 			if (!StringUtils.equals(md5, key.getMd5())) {
 				resultBuilder.append(key.getDataId()).append(WORD_SEPARATOR).append(key.getGroup())
 						.append(LINE_SEPARATOR);
@@ -136,6 +140,14 @@ public class ConfigController {
 
 	public void setDiskService(DiskService diskService) {
 		this.diskService = diskService;
+	}
+
+	public Md5CacheService getMd5CacheService() {
+		return md5CacheService;
+	}
+
+	public void setMd5CacheService(Md5CacheService md5CacheService) {
+		this.md5CacheService = md5CacheService;
 	}
 
 	/**

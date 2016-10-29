@@ -7,6 +7,8 @@ import org.apache.commons.logging.LogFactory;
 
 import com.taobao.diamond.domain.ConfigInfo;
 import com.taobao.diamond.domain.Page;
+import com.taobao.diamond.md5.MD5;
+
 
 /**
  * Dump配置信息任务
@@ -16,51 +18,61 @@ import com.taobao.diamond.domain.Page;
  */
 public final class DumpConfigInfoTask implements Runnable {
 
-	private static final Log log = LogFactory.getLog(DumpConfigInfoTask.class);
+    private static final Log log = LogFactory.getLog(DumpConfigInfoTask.class);
 
-	private static final int PAGE_SIZE = 1000;
+    private static final int PAGE_SIZE = 1000;
 
-	private final TimerTaskService timerTaskService;
+    private final TimerTaskService timerTaskService;
 
-	public DumpConfigInfoTask(TimerTaskService timerTaskService) {
-		this.timerTaskService = timerTaskService;
-	}
+    public DumpConfigInfoTask(TimerTaskService timerTaskService) {
+        this.timerTaskService = timerTaskService;
+    }
 
-	public void run() {
-		try {
-			Page<ConfigInfo> page = this.timerTaskService.getPersistService().findAllConfigInfo(1, PAGE_SIZE);
-			if (page != null) {
-				// 总页数
-				int totalPages = page.getPagesAvailable();
-				updateConfigInfo(page);
-				if (totalPages > 1) {
-					for (int pageNo = 2; pageNo <= totalPages; pageNo++) {
-						page = this.timerTaskService.getPersistService().findAllConfigInfo(pageNo, PAGE_SIZE);
-						if (page != null) {
-							updateConfigInfo(page);
-						}
-					}
-				}
-			}
-		} catch (Throwable t) {
-			log.error("dump task run error", t);
-		}
-	}
+    public void run() {
+        try {
+            Page<ConfigInfo> page = this.timerTaskService.getPersistService().findAllConfigInfo(1, PAGE_SIZE);
+            if (page != null) {
+                // 总页数
+                int totalPages = page.getPagesAvailable();
+                updateConfigInfo(page);
+                if (totalPages > 1) {
+                    for (int pageNo = 2; pageNo <= totalPages; pageNo++) {
+                        page = this.timerTaskService.getPersistService().findAllConfigInfo(pageNo, PAGE_SIZE);
+                        if (page != null) {
+                            updateConfigInfo(page);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Throwable t) {
+            log.error("dump task run error", t);
+        }
+    }
 
-	private void updateConfigInfo(Page<ConfigInfo> page) throws IOException {
-		for (ConfigInfo configInfo : page.getPageItems()) {
-			if (configInfo == null) {
-				continue;
-			}
-			try {
-				// 写入磁盘，更新缓存
-				this.timerTaskService.getConfigService().updateMD5Cache(configInfo);
-				this.timerTaskService.getDiskService().saveToDisk(configInfo);
-			} catch (Throwable t) {
-				log.error("dump config info error, dataId=" + configInfo.getDataId() + ", group=" + configInfo.getGroup(), t);
-			}
 
-		}
-	}
+    private void updateConfigInfo(Page<ConfigInfo> page) throws IOException {
+        for (ConfigInfo configInfo : page.getPageItems()) {
+            if (configInfo == null) {
+                continue;
+            }
+            try {
+            	String content = configInfo.getContent();
+            	content = timerTaskService.getImportService().getConentWithImport(content);
+            	configInfo.setContent(content);
+            	
+            	String md5 = MD5.getInstance().getMD5String(content);
+            	configInfo.setMd5(md5);
+            	
+                // 写入磁盘，更新缓存
+                timerTaskService.getMd5CacheService().updateMD5Cache(configInfo);
+                timerTaskService.getDiskService().saveToDisk(configInfo);
+            }
+            catch (Throwable t) {
+                log.error(
+                    "dump config info error, dataId=" + configInfo.getDataId() + ", group=" + configInfo.getGroup(), t);
+            }
+        }
+    }
 
 }
