@@ -53,7 +53,7 @@ public class ConfigService {
         return sb.toString();
     }
 
-    String generatePath(String dataId, final String group) {
+    public String generatePath(String dataId, final String group) {
         StringBuilder sb = new StringBuilder("/");
         sb.append(Constants.BASE_DIR).append("/");
         sb.append(group).append("/");
@@ -70,6 +70,9 @@ public class ConfigService {
             persistService.removeConfigInfo(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(configInfo.getDataId(), configInfo.getGroup());
+            
+            //import 依赖更新
+            this.updateImportConfig(configInfo.getDataId(), configInfo.getGroup());
         }
         catch (Exception e) {
             log.error("删除配置信息错误", e);
@@ -90,6 +93,9 @@ public class ConfigService {
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
+            
+            //import 依赖更新
+            this.updateImportConfig(configInfo.getDataId(), configInfo.getGroup());
         }
         catch (Exception e) {
             log.error("保存ConfigInfo失败", e);
@@ -117,13 +123,59 @@ public class ConfigService {
             diskService.saveToDisk(configInfo);
             // 通知其他节点
             this.notifyOtherNodes(dataId, group);
+            
+            //import 依赖更新
+            this.updateImportConfig(configInfo.getDataId(), configInfo.getGroup());
         }
         catch (Exception e) {
             log.error("保存ConfigInfo失败", e);
             throw new ConfigServiceException(e);
         }
     }
+    
+    private String getUniqueKey(String dataId, String group) {
+		return group + ":" + dataId;
+	}
+    
+    private void updateImportConfig(String dataId, String group) {
+    	//依赖的更新		
+    	String keyword = "diamond.import=" + group + ":" + dataId;
+    	
+    	List<ConfigInfo> list = persistService.findConfigInfoByKeyword(keyword);
+    	for (ConfigInfo configInfo2 : list) {
+    		if(!configInfo2.getUniqueKey().equals(this.getUniqueKey(dataId, group))) {
+    			log.info(configInfo2.getDataId() + ":" + configInfo2.getGroup());
+        		notifyService.notifyConfigInfoChange(configInfo2.getDataId(), configInfo2.getGroup());
+        		this.updateConfigInfoWithoutImport(configInfo2.getDataId(), configInfo2.getGroup(), configInfo2.getContent());
+    		}
+    	}
+    }
 
+    /**
+     * 更新配置信息
+     * 
+     * @param dataId
+     * @param group
+     * @param content
+     */
+    public void updateConfigInfoWithoutImport(String dataId, String group, String content) {
+        checkParameter(dataId, group, content);
+        String importContent = importService.getConentWithImport(content);
+        ConfigInfo configInfo = new ConfigInfo(dataId, group, importContent);
+        // 先更新数据库，再更新磁盘
+        try {
+            persistService.updateConfigInfo(configInfo, content);
+            // 切记更新缓存
+            md5CacheService.updateMD5Cache(configInfo);
+            diskService.saveToDisk(configInfo);
+            // 通知其他节点
+            this.notifyOtherNodes(dataId, group);
+        }
+        catch (Exception e) {
+            log.error("保存ConfigInfo失败", e);
+            throw new ConfigServiceException(e);
+        }
+    }
 
     /**
      * 将配置信息从数据库加载到磁盘
