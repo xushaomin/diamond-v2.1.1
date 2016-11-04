@@ -156,6 +156,10 @@ public class ConfigInfo implements Serializable, Comparable<ConfigInfo> {
 		return true;
 	}
 
+	public String getUniqueKey() {
+		return group + ":" + dataId;
+	}
+	
 	@Override
 	public String toString() {
 		return "[" + "dataId=" + dataId + "," + "groupName=" + group + "," + "context=" + content + "," + "]";
