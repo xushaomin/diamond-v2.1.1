@@ -30,16 +30,17 @@ public class ImportService {
 				StringReader reader = new StringReader(content);
 				BufferedReader br = new BufferedReader(reader);
 				String line = "";
-
 				while ((line = br.readLine()) != null) {
-					String[] arrs = line.replaceAll(" ", "").split("=");
-					if(arrs.length == 2) {
-						String[] keys = arrs[1].split(":");
-						String groupKey = keys[0];
-						String dataIdKey = keys[1];
-						ConfigInfo importConfig = persistService.findConfigInfo(dataIdKey, groupKey);
-						if (null != importConfig) {
-							content = content + "\n" + importConfig.getContent();
+					if (line.contains("diamond.import=")) {
+						String[] arrs = line.replaceAll(" ", "").split("=");
+						if(arrs.length == 2) {
+							String[] keys = arrs[1].split(":");
+							String groupKey = keys[0];
+							String dataIdKey = keys[1];
+							ConfigInfo importConfig = persistService.findConfigInfo(dataIdKey, groupKey);
+							if (null != importConfig) {
+								content = content + "\n" + importConfig.getContent();
+							}
 						}
 					}
 				}

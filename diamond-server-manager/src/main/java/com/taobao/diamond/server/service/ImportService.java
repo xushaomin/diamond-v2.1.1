@@ -30,9 +30,8 @@ public class ImportService {
 				StringReader reader = new StringReader(content);
 				BufferedReader br = new BufferedReader(reader);
 				String line = "";
-
 				while ((line = br.readLine()) != null) {
-					if (line.contains("diamond.import")) {
+					if (line.contains("diamond.import=")) {
 						String[] arrs = line.replaceAll(" ", "").split("=");
 						if(arrs.length == 2) {
 							String[] keys = arrs[1].split(":");
