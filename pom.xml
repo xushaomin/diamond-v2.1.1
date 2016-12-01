@@ -209,6 +209,12 @@
 				<artifactId>apple-boot-tomcat</artifactId>
 				<version>${boot.version}</version>
 			</dependency>
+			
+			<dependency>
+				<groupId>com.appleframework.boot</groupId>
+				<artifactId>apple-boot-jetty</artifactId>
+				<version>${boot.version}</version>
+			</dependency>
 		
 		</dependencies>
 	</dependencyManagement>

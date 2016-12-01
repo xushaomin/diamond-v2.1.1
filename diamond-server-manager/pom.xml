@@ -106,13 +106,13 @@
 		<!-- tomcat -->
 		<dependency>
 			<groupId>com.appleframework.boot</groupId>
-			<artifactId>apple-boot-tomcat</artifactId>
+			<artifactId>apple-boot-jetty</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.appleframework.config</groupId>
 			<artifactId>apple-config-core</artifactId>
-			<version>0.1.7.RELEASE</version>
+			<version>0.2.2.RELEASE</version>
 		</dependency>
 		
 	</dependencies>

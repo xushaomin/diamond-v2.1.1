@@ -39,6 +39,7 @@ public class PersistService {
 
     // 最大记录条数
     private static final int MAX_ROWS = 10000;
+    
     // JDBC执行超时时间, 单位秒
     private static final int QUERY_TIMEOUT = 2;
 
@@ -91,8 +92,7 @@ public class PersistService {
         ds.setMaxActive(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxActive"))));
         ds.setMaxIdle(Integer.parseInt(ensurePropValueNotNull(props.getProperty("db.maxIdle"))));
         ds.setMaxWait(Long.parseLong(ensurePropValueNotNull(props.getProperty("db.maxWait"))));
-        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props
-            .getProperty("db.poolPreparedStatements"))));
+        ds.setPoolPreparedStatements(Boolean.parseBoolean(ensurePropValueNotNull(props.getProperty("db.poolPreparedStatements"))));
 
         this.jt = new JdbcTemplate();
         this.jt.setDataSource(ds);
@@ -200,9 +200,7 @@ public class PersistService {
         if (StringUtils.isBlank(dataId) && StringUtils.isBlank(group)) {
             return this.findAllConfigInfo(pageNo, pageSize);
         }
-
         PaginationHelper<ConfigInfo> helper = new PaginationHelper<ConfigInfo>();
-
         String sqlCountRows = "select count(id) from config_info where ";
         String sqlFetchRows = "select id,data_id,group_id,content,md5 from config_info where ";
         boolean wasFirst = true;
@@ -221,7 +219,6 @@ public class PersistService {
                 sqlFetchRows += "and group_id like ? ";
             }
         }
-
         Object[] args = null;
         if (!StringUtils.isBlank(dataId) && !StringUtils.isBlank(group)) {
             args = new Object[] { generateLikeArgument(dataId), generateLikeArgument(group) };

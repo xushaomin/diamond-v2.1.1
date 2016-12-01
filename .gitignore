@@ -7,15 +7,19 @@
 */.project
 *.classpath
 *.log
-# Mobile Tools for Java (J2ME)
+
 .mtj.tmp/
 
 # Package Files #
 *.jar
 *.war
 *.ear
+*/webapp/config-data/*
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+/diamond-server/src/main/webapp/config-data/*
+/diamond-server-manager/src/main/webapp/config-data/*
+
+
 hs_err_pid*
 
 
