@@ -46,11 +46,11 @@ LIB_JARS=`ls $LIB_DIR|grep .jar|awk '{print "'$LIB_DIR'/"$0}'|tr "\n" ":"`
 
 JAVA_OPTS=" -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true "
 JAVA_DEBUG_OPTS=""
-if [ "$3" = "debug" ]; then
+if [ "$2" = "debug" ]; then
     JAVA_DEBUG_OPTS=" -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n "
 fi
 JAVA_JMX_OPTS=""
-if [ "$2" = "jmx" ]; then
+if [ "$1" = "jmx" ]; then
 	echo "Jmx port is $JMX_PORT"
 	if [ -n "$JMX_PORT" ]; then
 		JMX_PORT_COUNT=`netstat -tln | grep $JMX_PORT | wc -l`
