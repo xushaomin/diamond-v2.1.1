@@ -106,7 +106,7 @@
 		<!-- tomcat -->
 		<dependency>
 			<groupId>com.appleframework.boot</groupId>
-			<artifactId>apple-boot-jetty</artifactId>
+			<artifactId>apple-boot-tomcat</artifactId>
 		</dependency>
 
 		<dependency>
