@@ -19,6 +19,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.jasig.cas.client.filter.CasFilter;
 import org.jasig.cas.client.model.User;
+import org.jasig.cas.client.util.CasPropertiesConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -27,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.appleframework.config.core.PropertyConfigurer;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.domain.ConfigInfo;
 import com.taobao.diamond.domain.ConfigInfoEx;
@@ -261,7 +261,7 @@ public class AdminController {
     public String listConfigLike(HttpServletRequest request, HttpServletResponse response,
             String keyword, Integer pageNo, Integer pageSize, ModelMap modelMap) {
     	User user = (User)request.getSession().getAttribute(CasFilter.SESSION_USER_KEY);
-    	String configRoleId = PropertyConfigurer.getValue("configRoleId");
+    	String configRoleId = CasPropertiesConfig.getString("configRoleId");
     	modelMap.addAttribute("configRoleId", configRoleId);
     	if(null == pageNo)
     		pageNo = 1;

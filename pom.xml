@@ -10,7 +10,7 @@
 	<name>taobao diamond v${project.version}</name>
 
 	<properties>
-		<boot.version>0.2.6.RELEASE</boot.version>
+		<boot.version>0.3.0.RELEASE</boot.version>
 		<spring.version>3.2.6.RELEASE</spring.version>
 	</properties>
 
