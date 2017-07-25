@@ -10,14 +10,18 @@
 package com.taobao.diamond.common;
 
 public class Constants {
+	
+    public static String DEFAULT_DOMAINNAME = "configlist.appleframework.com";
+
+    public static String DAILY_DOMAINNAME = "configinfo.appleframework.com";
+
+    public static final String HTTP_URI_FILE = "/diamond-server/config.co";
+
+    public static final String CONFIG_HTTP_URI_FILE = "/diamond-server-list";
 
     public static final String DEFAULT_GROUP = "DEFAULT_GROUP";
     
     public static final String BASE_DIR = "config-data";
-
-    public static final String DEFAULT_DOMAINNAME = "configlist.appleframework.com";
-
-    public static final String DAILY_DOMAINNAME = "configinfo.appleframework.com";
 
     public static final int DEFAULT_PORT = 80;
 
@@ -52,10 +56,6 @@ public class Constants {
     public static final int CONN_TIMEOUT = 2000;// 毫秒
 
     public static final int RECV_WAIT_TIMEOUT = ONCE_TIMEOUT * 5;// 毫秒
-
-    public static final String HTTP_URI_FILE = "/diamond-server/config.co";
-
-    public static final String CONFIG_HTTP_URI_FILE = "/diamond-server-list";
 
     public static final String ENCODE = "UTF-8";
 
